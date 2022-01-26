@@ -1,0 +1,75 @@
+version: "2.4"
+
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:11.5
+    networks:
+      - main
+    ports:
+      - "5434:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=postgres
+
+  backend:
+    container_name: backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    command: >
+      bash -c "python3 manage.py seed_data && \
+              watchmedo auto-restart \
+              --directory=./ \
+              --pattern=*.py \
+              --recursive \
+              -- \
+              python3 manage.py runserver_plus 0.0.0.0:8000"
+    volumes:
+      - ./backend:/code
+    networks:
+      - main
+    ports:
+      - "8000:8000"
+      - "8888:8888"
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+
+  frontend:
+    container_name: frontend
+    build:
+      context: ./frontend
+    volumes:
+      - "./frontend:/app/"
+      - "/app/node_modules"
+    ports:
+      - "3001:3000"
+    depends_on:
+      - backend
+    networks:
+      - main
+
+  nginx:
+    container_name: nginx
+    build:
+      context: ./nginx
+      dockerfile: dev/Dockerfile
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - frontend
+    volumes:
+      - ./nginx/dev/dev.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - main
+
+volumes:
+  pg-data:
+
+networks:
+  main:
+    driver: bridge
