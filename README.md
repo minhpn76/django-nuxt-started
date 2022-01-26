@@ -1,4 +1,4 @@
-# Django Nuxt Starter Project
+# Django Nuxt Started Project
 
 This project will demonstrate how to use Django with Nuxt. It will use the Vue Composition API and Django Session Authentication.
 
